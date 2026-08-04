@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jitendra310/olx-api/internal/config"
+	"github.com/jitendra310/olx-api/internal/handlers"
 )
 
 func main() {
@@ -18,12 +19,7 @@ func main() {
 	//make own router
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	mux.HandleFunc("GET /healthz", handlers.Health)
 
 	srv := http.Server{
 		Addr:         ":" + cfg.Port,
