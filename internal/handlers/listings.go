@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -19,14 +20,16 @@ type listing struct {
 
 // to store all the dependency
 type ListingHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *slog.Logger
 }
 
 // the below function will construct the above struct, thats why we can can call this
 // function as a constructor
-func NewListingHandler(db *sql.DB) *ListingHandler {
+func NewListingHandler(db *sql.DB, logger *slog.Logger) *ListingHandler {
 	return &ListingHandler{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
@@ -44,7 +47,7 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 			ORDER BY created_at DESC
 			LIMIT 100`)
 	if err != nil {
-		log.Printf("query: %v", err)
+		lh.logger.Error("listing query error", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -54,10 +57,12 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var l listing
 		if err := rows.Scan(&l.ID, &l.Title, &l.Description, &l.Price, &l.City, &l.CreatedAt); err != nil {
-			log.Printf("rows.scan: %v", err)
+			lh.logger.Error("row scan error", "err", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
+		lh.logger.Info("listing feached", "total", len(listings))
+
 		listings = append(listings, l)
 	}
 	if err := rows.Err(); err != nil {
@@ -73,11 +78,16 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+
+	// lh.logger.Debug("debug log", "listing_id", id)
+	// lh.logger.Info("starting query", "listing_id", id)
+	// lh.logger.Warn("warn log", "listing_id", id)
+
 	ctx := r.Context()
 	_, err := lh.db.ExecContext(ctx,
-		`DELETE FROM listings WHERE id=$1`, id)
+		`DELETE FROM listing WHERE id=$1`, id)
 	if err != nil {
-		log.Printf("delete: %v", err)
+		lh.logger.Error("delete failed", "listing_id", id, "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
