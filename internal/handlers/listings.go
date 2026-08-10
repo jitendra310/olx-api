@@ -34,7 +34,11 @@ func NewListingHandler(db *sql.DB) *ListingHandler {
 // Now, we can say it's a method of ListingHandler
 // method attacher (lh ListingHandler)
 func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
-	rows, err := lh.db.Query(
+	//request scoped context
+	ctx := r.Context()
+	// when client cancel the request but, DB continuously fetching the resources the we call it zombie query
+	// to wait some time in the query we can use for test pg_sleep(20)
+	rows, err := lh.db.QueryContext(ctx,
 		`SELECT id, title, description, price, city, created_at
 			FROM listings
 			ORDER BY created_at DESC
@@ -69,8 +73,8 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-
-	_, err := lh.db.Exec(
+	ctx := r.Context()
+	_, err := lh.db.ExecContext(ctx,
 		`DELETE FROM listings WHERE id=$1`, id)
 	if err != nil {
 		log.Printf("delete: %v", err)
