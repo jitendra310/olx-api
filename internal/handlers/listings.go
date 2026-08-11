@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jitendra310/olx-api/internal/httpx"
 	"github.com/jitendra310/olx-api/internal/middleware"
 )
 
@@ -50,7 +51,7 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 			LIMIT 100`)
 	if err != nil {
 		lh.logger.Error("listing query error", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, "somthing went wrong", httpx.CodeInternalError)
 		return
 	}
 	defer rows.Close()
@@ -60,8 +61,9 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 		var l listing
 		if err := rows.Scan(&l.ID, &l.Title, &l.Description, &l.Price, &l.City, &l.CreatedAt); err != nil {
 			lh.logger.Error("row scan error", "err", err)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			httpx.Error(w, http.StatusInternalServerError, "somthing went wrong", httpx.CodeInternalError)
 			return
+
 		}
 		lh.logger.Info("listing feached", "total", len(listings))
 
@@ -69,7 +71,8 @@ func (lh ListingHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := rows.Err(); err != nil {
 		log.Printf("rows.err: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, "somthing went wrong", httpx.CodeInternalError)
+		return
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -88,10 +91,11 @@ func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	// lh.logger.Warn("warn log", "listing_id", id)
 
 	_, err := lh.db.ExecContext(ctx,
-		`DELETE FROM listing WHERE id=$1`, id)
+		`DELETE FROM listings WHERE id=$1`, id)
 	if err != nil {
 		lh.logger.Error("delete failed", "listing_id", id, "requestId", requestId, "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		// http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.Error(w, http.StatusInternalServerError, "somthing went wrong", httpx.CodeInternalError)
 		return
 	}
 	// result.RowsAffected() can get the affected/deleted row
