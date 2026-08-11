@@ -10,6 +10,7 @@ type Code string
 const (
 	CodeInvalidId     Code = "invalid_id"
 	CodeInternalError Code = "internal_error"
+	CodeMalFormedJSON Code = "malformed_json"
 )
 
 type ErrorEnvelope struct {
