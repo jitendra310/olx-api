@@ -34,13 +34,14 @@ func main() {
 
 	lh := handlers.NewListingHandler(db, logger)
 	ah := handlers.NewAuthHandler(db, logger, cfg)
+	requireAuth := middleware.RequireAuth(logger, cfg.JwtKet)
 
 	//make own router
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", handlers.Health)
 	mux.HandleFunc("GET /listings", lh.List)
-	mux.HandleFunc("DELETE /listings/{id}", lh.Delete)
+	mux.Handle("DELETE /listings/{id}", requireAuth(http.HandlerFunc(lh.Delete)))
 	mux.HandleFunc("POST /listings", lh.Create)
 	mux.HandleFunc("POST /signup", ah.Signup)
 	mux.HandleFunc("POST /signin", ah.Signin)

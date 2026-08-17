@@ -145,7 +145,7 @@ func (ah AuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: jwt.NewNumericDate(now.Add(tokenTTL)),
 	}
 
-	//gen rand key: openssl rand -base64 32 ZwQfR6OMAP9kk1WoE15U8p8oExZqfXsQESso8rrChTU=
+	//gen rand key: openssl rand -base64 32
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString([]byte(ah.cfg.JwtKet))
 	if err != nil {
