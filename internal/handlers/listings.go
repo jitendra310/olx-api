@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -106,7 +107,13 @@ func (lh ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (lh ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId := middleware.RequestIdFromContext(ctx)
-
+	userID, ok := middleware.UserIDFromContext(ctx)
+	fmt.Println("userID ==> ", userID)
+	if !ok {
+		lh.logger.Error("no userid found in context")
+		httpx.Error(w, http.StatusInternalServerError, "something went wrong", httpx.CodeInternalError)
+		return
+	}
 	var req CreateListingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		lh.logger.Error("failed to decode", "request_id", requestId, "err", err)
@@ -123,7 +130,7 @@ func (lh ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	row := lh.db.QueryRowContext(ctx, `
-	INSERT INTO listings (title, description, price, city) VALUES ($1, $2, $3, $4) RETURNING id, title, created_at`, req.Title, req.Description, req.Price, req.City)
+	INSERT INTO listings (user_id, title, description, price, city) VALUES ($1, $2, $3, $4, $5) RETURNING id, title, created_at`, userID, req.Title, req.Description, req.Price, req.City)
 
 	// var id string
 	var out CreatelistingResponse
